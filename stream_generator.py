@@ -1,10 +1,5 @@
 import threading
 import queue
-
-import uvicorn
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -12,10 +7,6 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.schema import (
     HumanMessage,
     SystemMessage
-)
-
-app = FastAPI(
-    title="LangChain API",
 )
 
 
@@ -56,7 +47,7 @@ def llm_thread(g, prompt):
             callback_manager=CallbackManager([ChainStreamHandler(g)]),
             temperature=0.7,
         )
-        chat([SystemMessage(content="You are a poetic assistant"), HumanMessage(content=prompt)])
+        chat([SystemMessage(content="あなたは優秀なチャットボットとして振る舞ってください。"), HumanMessage(content=prompt)])
 
     finally:
         g.close()
@@ -67,18 +58,11 @@ def chat(prompt):
     threading.Thread(target=llm_thread, args=(g, prompt)).start()
     return g
 
+print("start")
+generator = chat("こんにちは")
 
-@app.get("/question-stream")
-async def stream():
-    return StreamingResponse(
-        chat("Write me a song about sparkling water."),
-        media_type='text/event-stream'
-    )
+# generatorから値を取り出して表示
+for i in range(100):
+    print(next(generator))
+print("end")
 
-
-def start():
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-
-
-if __name__ == "__main__":
-    start()
